@@ -103,7 +103,7 @@ class ImageAnalysisPipeline:
 if __name__ == "__main__":
 
     pipeline = ImageAnalysisPipeline(
-        base_path='./images',
+        base_path='./images_oligodT',
         solvents=["Water", "MeOH", "Acetone"],
         numbers=[1, 2, 3],
     )

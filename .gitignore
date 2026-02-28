@@ -1,7 +1,7 @@
 ## .gitignore for bio project 
 
 ## Folders to ignore - typically ignore the data, logs, output, checkpoints, and images folders
-/images/
+/images_*/
 /bio
 /.claude
 /data
