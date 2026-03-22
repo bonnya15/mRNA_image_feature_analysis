@@ -4,6 +4,7 @@
 /images_*/
 /bio
 /.claude
+/.vscode
 /data
 ./logs
 ./output
@@ -19,6 +20,8 @@
 ./*.pth
 ./*.zip
 ./*.tar.gz
+
+
 
 ./pyvenv.cfg
 ./venv/
@@ -36,6 +39,9 @@
 *.doc
 *.pptx
 *.ppt
-*.pdf
 *.txt
+*.aux
+*.log
+*.out
+*.gz
 

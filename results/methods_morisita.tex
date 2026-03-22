@@ -1,0 +1,270 @@
+% \documentclass[12pt]{article}
+
+% \usepackage[margin=1in]{geometry}
+% \usepackage{amsmath}
+% \usepackage{amssymb}
+% \usepackage{setspace}
+% \usepackage{parskip}
+% \usepackage{hyperref}
+% \usepackage{booktabs}
+% \usepackage{bibentry}
+
+% \doublespacing
+
+% \title{Methods: Spatial Distribution Analysis}
+% \author{}
+% \date{}
+
+% \begin{document}
+
+% \maketitle
+
+% \section{Methods}
+
+% \subsection{\quad Spatial Distribution Analysis via Morisita's Index of Dispersion}
+
+% To quantify the spatial distribution of fluorescent particles in peptide assembly
+% images, Morisita's Index of Dispersion ($I_M$) was computed using a quadrat-based
+% random sampling approach. The complete analysis pipeline is described below.
+
+% % -------------------------------------------------------------------
+% \subsubsection{\quad Image Loading and Pre-processing}
+
+% Fluorescence microscopy images acquired under varying buffer conditions
+% (NaHEPES and Naphosphate, at concentrations of 10, 50, 100, and 250~mM, across
+% pH values of 6.0, 6.5, 7.0, 7.5, and 8.0) were imported in grayscale format
+% using the OpenCV library (\texttt{cv2.imread}, flag: \texttt{IMREAD\_GRAYSCALE}).
+% Each image was represented as a two-dimensional array of pixel intensity values
+% in the range $[0,\,255]$.
+
+% % -------------------------------------------------------------------
+% \subsubsection{\quad Image Binarization}
+
+% Prior to spatial analysis, each grayscale image was converted to a binary mask to
+% isolate fluorescent signal from background. Otsu's automatic thresholding
+% method~\cite{otsu1979} was applied (\texttt{cv2.threshold} with
+% \texttt{THRESH\_BINARY\,+\,THRESH\_OTSU}), which determines an optimal global
+% intensity threshold by minimising the intra-class variance between foreground and
+% background pixel populations. Pixels with intensity values exceeding the Otsu
+% threshold were assigned a value of 1 (bright/signal), while all remaining pixels
+% were assigned a value of 0 (background). This approach was adopted to ensure that
+% binarization was objective and reproducible across all experimental conditions,
+% without requiring manual threshold selection.
+
+% % -------------------------------------------------------------------
+% \subsubsection{\quad Random Quadrat Sampling}
+
+% To assess spatial heterogeneity, $q = 200$ non-deterministic square quadrats of
+% side length $s = 64$~pixels were randomly positioned within the binarized image.
+% The top-left corner coordinates $(r_i,\,c_i)$ of each quadrat were drawn
+% independently and uniformly from the set of valid positions --- defined as all
+% positions for which the quadrat lay entirely within the image boundaries --- using
+% a seeded pseudo-random number generator (NumPy \texttt{default\_rng}, seed $= 42$)
+% to ensure reproducibility. For each quadrat $Q_i$, the number of bright pixels
+% $n_i$ was recorded by summing all foreground pixels within the corresponding
+% $s \times s$ pixel region of the binary mask:
+
+% \begin{equation}
+%     n_i \;=\; \sum_{(x,\,y)\,\in\, Q_i} B(x,\,y),
+%     \qquad i = 1, 2, \ldots, q
+%     \label{eq:quadrat_count}
+% \end{equation}
+
+% \noindent where $B(x,\,y) \in \{0,\,1\}$ denotes the binary mask value at pixel
+% position $(x,\,y)$.
+
+% % -------------------------------------------------------------------
+% \subsubsection{\quad Computation of Morisita's Index of Dispersion}
+
+% Morisita's Index of Dispersion ($I_M$) was computed from the quadrat counts
+% following the formulation originally proposed by Morisita~\cite{morisita1959}:
+
+% \begin{equation}
+%     I_M \;=\; \frac{q\,\displaystyle\sum_{i=1}^{q} n_i\,(n_i - 1)}{N\,(N - 1)}
+%     \label{eq:morisita}
+% \end{equation}
+
+% \noindent where $N = \sum_{i=1}^{q} n_i$ is the total number of bright pixels
+% observed across all $q$ sampled quadrats. The index $I_M$ provides a
+% dimensionless measure of spatial aggregation: a value of $I_M = 1$ is consistent
+% with a random (Poisson) distribution of particles, $I_M > 1$ indicates spatial
+% clustering, and $I_M < 1$ indicates a uniform or regular distribution. Images
+% yielding $N \leq 1$ across all quadrats were excluded from analysis and flagged as
+% containing insufficient fluorescent signal.
+
+% % -------------------------------------------------------------------
+% \subsubsection{\quad Statistical Significance Testing}
+
+% The statistical significance of the observed $I_M$ value was assessed using the
+% chi-squared test derived by Morisita~\cite{morisita1959}. Under the null hypothesis
+% $H_0$ that the bright pixels are spatially randomly distributed ($I_M = 1$), the
+% test statistic is given by:
+
+% \begin{equation}
+%     \chi^2 \;=\; I_M\,(N - 1) \;+\; q \;-\; N
+%     \label{eq:chi2}
+% \end{equation}
+
+% \noindent with degrees of freedom $\mathrm{df} = q - 1$. The corresponding
+% $p$-value was obtained from the chi-squared cumulative distribution function
+% \cite{scipy2020}. A significance threshold of $\alpha = 0.05$ was applied:
+% if $p < 0.05$, the null hypothesis was rejected and the distribution was
+% classified as either \textit{clustered} ($I_M > 1$) or \textit{uniform}
+% ($I_M < 1$); if $p \geq 0.05$, the distribution was classified as \textit{random}.
+
+% % -------------------------------------------------------------------
+% \subsubsection{\quad Visualisation}
+
+% For each image, three diagnostic panels were generated:
+% \begin{enumerate}
+%     \item The original grayscale image with all sampled quadrats overlaid,
+%           colour-coded by whether their bright-pixel count exceeded (red) or fell
+%           below (cyan) the mean count $\bar{n} = N/q$ across all quadrats.
+%     \item A frequency histogram of the per-quadrat bright-pixel counts $n_i$,
+%           providing a visual assessment of count dispersion relative to a
+%           Poisson-distributed baseline.
+%     \item A bar chart of the computed $I_M$ value plotted against the $I_M = 1$
+%           reference line, annotated with the chi-squared statistic and $p$-value.
+% \end{enumerate}
+
+% \noindent Results for all buffer conditions were compiled into a summary table and
+% exported to a CSV file for downstream statistical comparison.
+
+% % -------------------------------------------------------------------
+% \bibliographystyle{ieeetr}
+% \begin{thebibliography}{9}
+
+% \bibitem{morisita1959}
+% Morisita, M. (1959).
+% \newblock Measuring the dispersion of individuals and analysis of the
+% distributional patterns.
+% \newblock \textit{Memoirs of the Faculty of Science, Kyushu University,
+% Series~E (Biology)}, 2, 215--235.
+
+% \bibitem{otsu1979}
+% Otsu, N. (1979).
+% \newblock A threshold selection method from gray-level histograms.
+% \newblock \textit{IEEE Transactions on Systems, Man, and Cybernetics},
+% 9(1), 62--66.
+
+% \bibitem{scipy2020}
+% Virtanen, P., Gommers, R., Oliphant, T.~E., et~al. (2020).
+% \newblock {SciPy} 1.0: Fundamental algorithms for scientific computing in
+% {Python}.
+% \newblock \textit{Nature Methods}, 17, 261--272.
+
+% \end{thebibliography}
+
+% \end{document}
+
+
+
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{bibentry}
+\usepackage{xcolor}
+
+\doublespacing
+
+\title{Methods: Spatial Distribution Analysis}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Methods: Spatial Distribution Analysis via Morisita's Index of Dispersion}
+
+To quantify the spatial distribution of fluorescent particles in \textcolor{red}{membranes}, Morisita's Index of Dispersion ($I_M$) was computed using a quadrat-based
+random sampling approach. The complete analysis pipeline is described below.
+
+\begin{itemize}
+    \item \textbf{Image Pre-processing :} Fluorescence microscopy images acquired under varying buffer conditions (NaHEPES and Naphosphate, at concentrations of 10, 50, 100, and 250~mM, across
+    pH values of 6.0, 6.5, 7.0, 7.5, and 8.0) were imported in grayscale format
+    using the OpenCV library.
+    Each image was represented as a two-dimensional array of pixel intensity values
+    in the range $[0,\,255]$.
+    \item \textbf{Image Binarization :} Prior to spatial analysis, each grayscale image was converted to a binary mask to
+    isolate fluorescent signal from background. Otsu's automatic thresholding
+    method~\cite{otsu1979} was applied, which determines an optimal global
+    intensity threshold by minimising the intra-class variance between foreground and
+    background pixel populations. Pixels with intensity values exceeding the Otsu
+    threshold were assigned a value of 1 (bright/signal), while all remaining pixels
+    were assigned a value of 0 (background). This approach was adopted to ensure that
+    binarization was objective and reproducible across all experimental conditions,
+    without requiring manual threshold selection.
+
+    \item \textbf{Random Quadrant Sampling :} To assess spatial heterogeneity, $q = 1000$ non-deterministic square quadrats of
+    side length $s = 5$~pixels were randomly positioned within the binarized image. For each quadrat $Q_i$, the number of bright pixels
+    $n_i$ was recorded by summing all foreground pixels within the corresponding
+    $s \times s$ pixel region of the binarized image.
+
+    \item \textbf{Computation of Morisita's Index of Dispersion :} Morisita's Index of Dispersion ($I_M$) was computed from the quadrat counts
+    following the formulation originally proposed by Morisita~\cite{morisita1959}:
+    
+    \begin{equation}
+        I_M \;=\; \frac{q\,\displaystyle\sum_{i=1}^{q} n_i\,(n_i - 1)}{N\,(N - 1)}
+        \label{eq:morisita}
+    \end{equation}
+    
+    \noindent where $N = \sum_{i=1}^{q} n_i$ is the total number of bright pixels
+    observed across all $q$ sampled quadrats. The index $I_M$ provides a
+    dimensionless measure of spatial aggregation, the 
+    signification of which can be obtained using a hypothesis
+    The testing framework is explained next. 
+
+    \item \textbf{Statistical Significance Testing :} The statistical significance of the observed $I_M$ value was assessed using the
+    chi-squared test derived by Morisita~\cite{morisita1959}. Under the null hypothesis
+    $H_0$ that the bright pixels are spatially randomly distributed ($I_M = 1$), the
+    test statistic is given by:
+    
+    \begin{equation}
+        \chi^2 \;=\; I_M\,(N - 1) \;+\; q \;-\; N
+        \label{eq:chi2}
+    \end{equation}
+    
+    \noindent with degrees of freedom $\mathrm{df} = q - 1$. The corresponding
+    $p$-value was obtained from the chi-squared cumulative distribution function
+    \cite{scipy2020}. A significance threshold of $\alpha = 0.05$ was applied:
+    if $p < 0.05$, the null hypothesis was rejected and the distribution was
+    classified as either \textit{clustered} ($I_M > 1$) or \textit{uniform}
+    ($I_M < 1$); if $p \geq 0.05$, the distribution was classified as \textit{random}.
+    
+\end{itemize}
+
+
+% -------------------------------------------------------------------
+\bibliographystyle{ieeetr}
+\begin{thebibliography}{9}
+
+\bibitem{morisita1959}
+Morisita, M. (1959).
+\newblock Measuring the dispersion of individuals and analysis of the
+distributional patterns.
+\newblock \textit{Memoirs of the Faculty of Science, Kyushu University,
+Series~E (Biology)}, 2, 215--235.
+
+\bibitem{otsu1979}
+Otsu, N. (1979).
+\newblock A threshold selection method from gray-level histograms.
+\newblock \textit{IEEE Transactions on Systems, Man, and Cybernetics},
+9(1), 62--66.
+
+\bibitem{scipy2020}
+Virtanen, P., Gommers, R., Oliphant, T.~E., et~al. (2020).
+\newblock {SciPy} 1.0: Fundamental algorithms for scientific computing in
+{Python}.
+\newblock \textit{Nature Methods}, 17, 261--272.
+
+\end{thebibliography}
+
+\end{document}
+
